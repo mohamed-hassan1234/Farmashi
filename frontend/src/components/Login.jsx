@@ -61,7 +61,8 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/users/login",
+        // FIXED: Using a relative path so Nginx on the domain can proxy the request.
+        "/api/users/login",
         form,
         { 
           withCredentials: true,
