@@ -1,199 +1,164 @@
 // controllers/dashboardController.js
-import Medicine from "../models/Medicine.js";
+import Supplier from "../models/Supplier.js";
 import Customer from "../models/Customer.js";
+import Medicine from "../models/Medicine.js";
 import Sale from "../models/Sale.js";
-import Debt from "../models/Debt.js";
 import Purchase from "../models/Purchase.js";
 import Payment from "../models/Payment.js";
+import Debt from "../models/Debt.js";
+import StockLog from "../models/StockLog.js";
 
-export const getDashboardData = async (req, res) => {
+export const getSummary = async (req, res, next) => {
   try {
-    const { range = "monthly" } = req.query;
-    const now = new Date();
-    let startDate;
+    const { start, end } = req.query;
+    const startDate = start ? new Date(start) : null;
+    const endDate = end ? new Date(end) : null;
+    if (endDate) endDate.setHours(23, 59, 59, 999);
 
-    // Calculate start date based on range
-    switch (range) {
-      case "daily":
-        startDate = new Date(now.setHours(0, 0, 0, 0));
-        break;
-      case "weekly":
-        startDate = new Date(now.setDate(now.getDate() - 7));
-        break;
-      case "monthly":
-        startDate = new Date(now.setMonth(now.getMonth() - 1));
-        break;
-      case "yearly":
-        startDate = new Date(now.setFullYear(now.getFullYear() - 1));
-        break;
-      default:
-        startDate = new Date(now.setMonth(now.getMonth() - 1));
-    }
+    // Helper to match date fields dynamically
+    const dateMatch = (field) => {
+      const match = {};
+      if (startDate) match.$gte = startDate;
+      if (endDate) match.$lte = endDate;
+      return Object.keys(match).length ? { [field]: match } : {};
+    };
 
-    // Basic counts
-    const medicineCount = await Medicine.countDocuments();
-    const customerCount = await Customer.countDocuments();
-    
-    // Stock status
-    const lowStock = await Medicine.find({ quantity_in_stock: { $lt: 10 } }).populate('supplier_id');
-    const lowStockCount = await Medicine.countDocuments({ quantity_in_stock: { $lt: 10, $gt: 0 } });
-    const outOfStockCount = await Medicine.countDocuments({ quantity_in_stock: 0 });
-    const inStockCount = await Medicine.countDocuments({ quantity_in_stock: { $gte: 10 } });
+    // ==== BASIC COUNTS ====
+    const [supplierCount, customerCount, medicineCount] = await Promise.all([
+      Supplier.countDocuments(),
+      Customer.countDocuments(),
+      Medicine.countDocuments(),
+    ]);
 
-    // Sales data
-    const sales = await Sale.find({ sale_date: { $gte: startDate } });
-    const totalSales = sales.length;
-    
-    // Revenue calculations
-    const totalRevenue = sales.reduce((acc, sale) => acc + sale.total_amount, 0);
-    const cashSales = sales.filter(sale => sale.sale_type === 'cash').length;
-    const creditSales = sales.filter(sale => sale.sale_type === 'credit').length;
+    // ==== LOW STOCK & EXPIRED ====
+    const lowStockCount = await Medicine.countDocuments({ quantity_in_stock: { $lte: 5 } });
+    const expiredCount = await Medicine.countDocuments({ expiry_date: { $lt: new Date() } });
 
-    // Profit calculations
-    let totalProfit = 0;
-    let totalExpenses = 0;
+    // ==== SALES ====
+    const saleAgg = [
+      { $match: startDate || endDate ? dateMatch("sale_date") : {} },
+      { $unwind: "$items" },
+      {
+        $lookup: {
+          from: "medicines",
+          localField: "items.medicine_id",
+          foreignField: "_id",
+          as: "med",
+        },
+      },
+      { $unwind: { path: "$med", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: null,
+          total_revenue: { $sum: "$items.subtotal" },
+          total_qty: { $sum: "$items.quantity" },
+          total_cogs: { $sum: { $multiply: ["$items.quantity", "$med.buying_price"] } },
+        },
+      },
+    ];
 
-    for (const sale of sales) {
-      for (const item of sale.items) {
-        const medicine = await Medicine.findById(item.medicine_id);
-        if (medicine) {
-          const profit = (item.price - medicine.buying_price) * item.quantity;
-          totalProfit += profit;
-        }
-      }
-    }
+    const saleRes = await Sale.aggregate(saleAgg);
+    const sales = saleRes[0] || { total_revenue: 0, total_qty: 0, total_cogs: 0 };
 
-    // Purchase expenses
-    const purchases = await Purchase.find({ purchase_date: { $gte: startDate } });
-    totalExpenses = purchases.reduce((acc, purchase) => acc + purchase.total_amount, 0);
+    // ==== PAYMENTS ====
+    const paymentMatch = startDate || endDate ? dateMatch("date") : {};
+    const paymentAgg = await Payment.aggregate([
+      { $match: paymentMatch },
+      { $group: { _id: "$type", total: { $sum: "$amount" } } },
+    ]);
 
-    const netProfit = totalProfit - totalExpenses;
-
-    // Debt calculations
-    const debts = await Debt.find();
-    const totalDebt = debts.reduce((acc, debt) => acc + debt.remaining_balance, 0);
-    const debtPaid = debts.reduce((acc, debt) => acc + debt.amount_paid, 0);
-    const debtPending = debts.filter(debt => debt.status === 'pending').reduce((acc, debt) => acc + debt.remaining_balance, 0);
-    const debtOverdue = debts.filter(debt => debt.status === 'overdue').reduce((acc, debt) => acc + debt.remaining_balance, 0);
-
-    // Payment data
-    const payments = await Payment.find({ date: { $gte: startDate } });
-    const pendingPayments = payments.filter(payment => payment.status === 'pending').length;
-
-    // Active customers (made purchases in the period)
-    const activeCustomers = await Sale.distinct('customer_id', { sale_date: { $gte: startDate } });
-
-    // Generate trend data
-    const profitLossTrend = generateTrendData(range, 'profit');
-    const revenueTrend = generateTrendData(range, 'revenue');
-
-    // Growth calculations (simplified)
-    const previousPeriodData = await getPreviousPeriodData(range, startDate);
-    const revenueGrowth = calculateGrowth(totalRevenue, previousPeriodData.revenue);
-    const profitGrowth = calculateGrowth(netProfit, previousPeriodData.profit);
-    const customerGrowth = calculateGrowth(activeCustomers.length, previousPeriodData.customers);
-
-    res.json({
-      // Basic metrics
-      medicineCount,
-      customerCount,
-      totalSales,
-      
-      // Financial metrics
-      totalRevenue,
-      totalProfit,
-      netProfit,
-      totalExpenses,
-      
-      // Stock metrics
-      lowStock,
-      lowStockCount,
-      outOfStockCount,
-      inStockCount,
-      
-      // Sales distribution
-      cashSales,
-      creditSales,
-      pendingPayments,
-      
-      // Debt metrics
-      totalDebt,
-      debtPaid,
-      debtPending,
-      debtOverdue,
-      
-      // Customer metrics
-      activeCustomers: activeCustomers.length,
-      
-      // Growth metrics
-      revenueGrowth,
-      profitGrowth,
-      customerGrowth,
-      
-      // Trend data
-      profitLossTrend,
-      revenueTrend
+    // Match actual Payment schema enum values
+    let payments = { customer_payment: 0, supplier_payment: 0 };
+    paymentAgg.forEach((p) => {
+      if (p._id === "customer_payment") payments.customer_payment = p.total;
+      if (p._id === "supplier_payment") payments.supplier_payment = p.total;
     });
 
-  } catch (error) {
-    console.error('Dashboard error:', error);
-    res.status(500).json({ message: error.message });
+    // ==== DEBTS ====
+    const debtMatch = startDate || endDate ? dateMatch("due_date") : {};
+    const debtAgg = await Debt.aggregate([
+      { $match: debtMatch },
+      {
+        $group: {
+          _id: null,
+          total_owed: { $sum: "$total_owed" },
+          total_paid: { $sum: "$amount_paid" },
+          total_remaining: { $sum: "$remaining_balance" },
+          overdue_count: {
+            $sum: {
+              $cond: [
+                { $and: [{ $lt: ["$due_date", new Date()] }, { $ne: ["$status", "cleared"] }] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+    const debts = debtAgg[0] || { total_owed: 0, total_paid: 0, total_remaining: 0, overdue_count: 0 };
+
+    // ==== PROFIT ====
+    const grossProfit = sales.total_revenue - sales.total_cogs;
+    const grossMargin = sales.total_revenue > 0
+      ? (grossProfit / sales.total_revenue) * 100
+      : 0;
+
+    // ==== TOP SOLD MEDICINES ====
+    const topSold = await Sale.aggregate([
+      { $match: startDate || endDate ? dateMatch("sale_date") : {} },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.medicine_id",
+          qty: { $sum: "$items.quantity" },
+          revenue: { $sum: "$items.subtotal" },
+        },
+      },
+      {
+        $lookup: {
+          from: "medicines",
+          localField: "_id",
+          foreignField: "_id",
+          as: "med",
+        },
+      },
+      { $unwind: { path: "$med", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          name: "$med.name",
+          qty: 1,
+          revenue: 1,
+          selling_price: "$med.selling_price",
+        },
+      },
+      { $sort: { qty: -1 } },
+      { $limit: 10 },
+    ]);
+
+    // ==== RECENT STOCK LOGS ====
+    const recentStockLogs = await StockLog.find().sort({ date: -1 }).limit(10).lean();
+
+    // ==== FINAL RESPONSE ====
+    return res.json({
+      counts: {
+        suppliers: supplierCount,
+        customers: customerCount,
+        medicines: medicineCount,
+        low_stock: lowStockCount,
+        expired: expiredCount,
+      },
+      sales,
+      payments,
+      debts,
+      profit: {
+        gross_profit: grossProfit,
+        gross_margin: grossMargin.toFixed(2),
+      },
+      top_sold: topSold,
+      recent_stock_logs: recentStockLogs,
+    });
+  } catch (err) {
+    next(err);
   }
-};
-
-// Helper functions
-const generateTrendData = (range, type) => {
-  const labels = [];
-  const data = [];
-  
-  switch (range) {
-    case 'daily':
-      for (let i = 0; i < 24; i++) {
-        labels.push(`${i}:00`);
-        data.push(Math.random() * 1000);
-      }
-      break;
-    case 'weekly':
-      labels.push('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun');
-      for (let i = 0; i < 7; i++) {
-        data.push(Math.random() * 5000);
-      }
-      break;
-    case 'monthly':
-      for (let i = 1; i <= 30; i++) {
-        labels.push(`Day ${i}`);
-        data.push(Math.random() * 2000);
-      }
-      break;
-    case 'yearly':
-      labels.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-      for (let i = 0; i < 12; i++) {
-        data.push(Math.random() * 10000);
-      }
-      break;
-  }
-
-  if (type === 'profit') {
-    return {
-      labels,
-      profit: data,
-      loss: data.map(value => value * -0.3) // Simulate some losses
-    };
-  }
-
-  return { labels, data };
-};
-
-const getPreviousPeriodData = async (range, currentStartDate) => {
-  // Simplified implementation - in real app, you'd query the database
-  return {
-    revenue: Math.random() * 100000,
-    profit: Math.random() * 50000,
-    customers: Math.floor(Math.random() * 1000)
-  };
-};
-
-const calculateGrowth = (current, previous) => {
-  if (!previous || previous === 0) return 100;
-  return ((current - previous) / previous * 100).toFixed(1);
 };

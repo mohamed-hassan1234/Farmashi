@@ -18,6 +18,7 @@ import Payment from "../components/Payment";
 import FullReport from "../components/Report";
 import { useTheme } from "../context/ThemeContext";
 import All from "../components/All";
+import Profile from "../components/Profile";
 
 const Dashboard = () => {
   const [activeMenu, setActiveMenu] = useState("home");
@@ -141,14 +142,7 @@ const Dashboard = () => {
       case "reports": return <FullReport />;
       case "settings":
         return (
-          <div className={`min-h-full p-6 ${darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-black"}`}>
-            <h1 className="text-3xl font-bold mb-6">Settings</h1>
-            <div className={`rounded-2xl p-6 ${darkMode ? "bg-gray-800" : "bg-white shadow-lg"}`}>
-              <p className={`${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-                Configure your dashboard preferences and system settings.
-              </p>
-            </div>
-          </div>
+          <Profile/>
         );
       default:
         return (

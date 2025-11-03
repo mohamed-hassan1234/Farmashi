@@ -4,12 +4,12 @@ import { generateReport, getReports, getReportById } from "../controllers/report
 const router = express.Router();
 
 // Generate new report
-router.post("/",  generateReport);
+router.post("/", generateReport);
 
 // Get all reports
-router.get("/",  getReports);
+router.get("/", getReports);
 
 // Get single report by ID
-router.get("/:id",  getReportById);
+router.get("/:id", getReportById);
 
 export default router;

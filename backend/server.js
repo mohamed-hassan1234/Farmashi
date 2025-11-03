@@ -20,7 +20,7 @@ app.use(
     origin: "http://localhost:5173", // frontend URL
     credentials: true, // enable cookies
   }) 
-);
+); 
  // Customize origin for security
 
 // Connect MongoDB

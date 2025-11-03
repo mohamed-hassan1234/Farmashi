@@ -1,708 +1,471 @@
+// src/components/All.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useTheme } from "../context/ThemeContext";
-import { motion, AnimatePresence } from "framer-motion";
-
-// Import Chart.js components directly
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  AreaChart, Area, ComposedChart
+} from 'recharts';
+import { useTheme as useCustomTheme } from "../context/ThemeContext";
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+const API_URL = "http://localhost:5000/api/dashboard/summary";
 
-const Dashboard = () => {
-  const { darkMode } = useTheme();
-  const [data, setData] = useState({});
-  const [timeRange, setTimeRange] = useState("monthly");
+// Enhanced color palette for charts
+const CHART_COLORS = {
+  primary: '#3B82F6',
+  secondary: '#8B5CF6',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  info: '#06B6D4',
+  indigo: '#6366F1',
+  purple: '#8B5CF6',
+  blue: '#3B82F6',
+  emerald: '#10B981'
+};
+
+const All = () => {
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const { darkMode } = useCustomTheme();
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [timeRange]);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`http://localhost:5000/api/dashboard?range=${timeRange}`);
-      setData(res.data);
-    } catch (err) {
-      console.error("Dashboard error:", err);
-      // Fallback data for demonstration
-      setData(getFallbackData());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fallback data for demonstration
-  const getFallbackData = () => {
-    const baseData = {
-      totalRevenue: 125000,
-      netProfit: 45000,
-      totalExpenses: 80000,
-      activeCustomers: 156,
-      medicineCount: 89,
-      lowStockCount: 12,
-      pendingPayments: 8,
-      totalSales: 234,
-      totalDebt: 15000,
-      debtPaid: 8500,
-      debtPending: 4500,
-      debtOverdue: 2000,
-      revenueGrowth: 12.5,
-      profitGrowth: 8.3,
-      customerGrowth: 5.2,
-      cashSales: 189,
-      creditSales: 45,
-      inStockCount: 65,
-      outOfStockCount: 12
+    const fetchSummary = async () => {
+      try {
+        const res = await axios.get(API_URL);
+        setSummary(res.data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchSummary();
+  }, []);
 
-    // Generate realistic trend data
-    const labels = generateLabels(timeRange);
-    baseData.profitLossTrend = {
-      labels,
-      profit: labels.map(() => Math.random() * 10000 + 20000),
-      loss: labels.map(() => Math.random() * 5000)
-    };
-    
-    baseData.revenueTrend = {
-      labels,
-      data: labels.map(() => Math.random() * 30000 + 80000)
-    };
-
-    baseData.lowStock = [
-      { _id: "1", name: "Paracetamol 500mg", quantity_in_stock: 3, supplier_id: { name: "MediSupplies Inc" } },
-      { _id: "2", name: "Amoxicillin 250mg", quantity_in_stock: 5, supplier_id: { name: "PharmaDistro Ltd" } },
-      { _id: "3", name: "Vitamin C 1000mg", quantity_in_stock: 2, supplier_id: { name: "HealthSupplies Co" } },
-      { _id: "4", name: "Ibuprofen 400mg", quantity_in_stock: 0, supplier_id: { name: "MediSupplies Inc" } }
-    ];
-
-    return baseData;
-  };
-
-  const generateLabels = (range) => {
-    switch (range) {
-      case 'daily':
-        return ['6AM', '9AM', '12PM', '3PM', '6PM', '9PM'];
-      case 'weekly':
-        return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      case 'monthly':
-        return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-      case 'yearly':
-        return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      default:
-        return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    }
-  };
-
-  // Chart data configurations
-  const profitLossChart = {
-    labels: data.profitLossTrend?.labels || [],
-    datasets: [
-      {
-        label: "Profit",
-        data: data.profitLossTrend?.profit || [],
-        borderColor: "#10B981",
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
-        fill: true,
-        tension: 0.4,
-        borderWidth: 3
-      },
-      {
-        label: "Loss",
-        data: data.profitLossTrend?.loss || [],
-        borderColor: "#EF4444",
-        backgroundColor: "rgba(239, 68, 68, 0.1)",
-        fill: true,
-        tension: 0.4,
-        borderWidth: 3
-      }
-    ]
-  };
-
-  const revenueChart = {
-    labels: data.revenueTrend?.labels || [],
-    datasets: [
-      {
-        label: "Revenue",
-        data: data.revenueTrend?.data || [],
-        borderColor: "#3B82F6",
-        backgroundColor: "rgba(59, 130, 246, 0.1)",
-        fill: true,
-        tension: 0.4,
-        borderWidth: 3
-      }
-    ]
-  };
-
-  const salesDistribution = {
-    labels: ["Cash Sales", "Credit Sales", "Pending Payments"],
-    datasets: [
-      {
-        data: [
-          data.cashSales || 0,
-          data.creditSales || 0,
-          data.pendingPayments || 0
-        ],
-        backgroundColor: [
-          "#10B981",
-          "#F59E0B",
-          "#EF4444"
-        ],
-        hoverBackgroundColor: [
-          "#059669",
-          "#D97706",
-          "#DC2626"
-        ],
-        borderWidth: 2,
-        borderColor: darkMode ? "#1F2937" : "#FFFFFF"
-      }
-    ]
-  };
-
-  const stockStatus = {
-    labels: ["In Stock", "Low Stock", "Out of Stock"],
-    datasets: [
-      {
-        data: [
-          data.inStockCount || 0,
-          data.lowStockCount || 0,
-          data.outOfStockCount || 0
-        ],
-        backgroundColor: [
-          "#10B981",
-          "#F59E0B",
-          "#EF4444"
-        ],
-        hoverBackgroundColor: [
-          "#059669",
-          "#D97706",
-          "#DC2626"
-        ],
-        borderWidth: 2,
-        borderColor: darkMode ? "#1F2937" : "#FFFFFF"
-      }
-    ]
-  };
-
-  // Chart options
-  const lineChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          color: darkMode ? '#E5E7EB' : '#374151',
-          font: {
-            size: 12,
-            family: "'Inter', sans-serif"
-          },
-          usePointStyle: true,
-          padding: 20
-        }
-      },
-      tooltip: {
-        backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-        titleColor: darkMode ? '#E5E7EB' : '#374151',
-        bodyColor: darkMode ? '#E5E7EB' : '#374151',
-        borderColor: darkMode ? '#374151' : '#E5E7EB',
-        borderWidth: 1,
-        padding: 12,
-        boxPadding: 6,
-        usePointStyle: true,
-        callbacks: {
-          label: function(context) {
-            return `$${context.parsed.y.toLocaleString()}`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: {
-          color: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-          drawBorder: false
-        },
-        ticks: {
-          color: darkMode ? '#9CA3AF' : '#6B7280',
-          font: {
-            family: "'Inter', sans-serif"
-          }
-        }
-      },
-      y: {
-        grid: {
-          color: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-          drawBorder: false
-        },
-        ticks: {
-          color: darkMode ? '#9CA3AF' : '#6B7280',
-          font: {
-            family: "'Inter', sans-serif"
-          },
-          callback: function(value) {
-            return '$' + value.toLocaleString();
-          }
-        }
-      }
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index'
-    },
-    animations: {
-      tension: {
-        duration: 1000,
-        easing: 'linear'
-      }
-    }
-  };
-
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '60%',
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: darkMode ? '#E5E7EB' : '#374151',
-          font: {
-            size: 11,
-            family: "'Inter', sans-serif"
-          },
-          usePointStyle: true,
-          padding: 15
-        }
-      },
-      tooltip: {
-        backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-        titleColor: darkMode ? '#E5E7EB' : '#374151',
-        bodyColor: darkMode ? '#E5E7EB' : '#374151',
-        borderColor: darkMode ? '#374151' : '#E5E7EB',
-        borderWidth: 1,
-        padding: 10,
-        boxPadding: 4,
-        usePointStyle: true,
-        callbacks: {
-          label: function(context) {
-            const label = context.label || '';
-            const value = context.parsed;
-            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentage = Math.round((value / total) * 100);
-            return `${label}: ${value} (${percentage}%)`;
-          }
-        }
-      }
-    }
-  };
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 12
-      }
-    }
-  };
-
-  const cardVariants = {
-    hidden: { scale: 0.9, opacity: 0 },
-    visible: {
-      scale: 1,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 12
-      }
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className={`w-16 h-16 border-4 ${darkMode ? 'border-blue-500 border-t-transparent' : 'border-blue-600 border-t-transparent'} rounded-full mx-auto mb-4`}
-          />
-          <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading Dashboard...</p>
-        </motion.div>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">Loading Dashboard Data...</p>
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-red-50 dark:from-gray-900 dark:to-red-900">
+      <div className="text-center p-8">
+        <div className="w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">{error}</h2>
+        <p className="text-gray-600 dark:text-gray-300">Please check your connection and try again</p>
+      </div>
+    </div>
+  );
+
+  const { counts, sales, payments, debts, profit, top_sold, recent_stock_logs } = summary;
+
+  // Enhanced chart data preparations
+  const profitLossData = [
+    { 
+      name: 'Revenue', 
+      value: sales.total_revenue, 
+      profit: profit.gross_profit,
+      type: 'revenue' 
+    },
+    { 
+      name: 'Gross Profit', 
+      value: profit.gross_profit, 
+      profit: profit.gross_profit,
+      type: 'profit' 
+    },
+    { 
+      name: 'Costs', 
+      value: payments.supplier_payment || 0, 
+      profit: - (payments.supplier_payment || 0),
+      type: 'cost' 
+    }
+  ];
+
+  const salesTrendData = top_sold.slice(0, 8).map((item, index) => ({
+    name: item.name?.split(' ').slice(0, 2).join(' ') || `Med ${index + 1}`,
+    revenue: item.revenue,
+    quantity: item.qty,
+    price: item.selling_price || 0
+  }));
+
+  const stockDistributionData = [
+    { name: 'Normal Stock', value: counts.medicines - counts.low_stock - counts.expired, color: CHART_COLORS.success },
+    { name: 'Low Stock', value: counts.low_stock, color: CHART_COLORS.warning },
+    { name: 'Expired', value: counts.expired, color: CHART_COLORS.error }
+  ];
+
+  const financialMetrics = [
+    { label: 'Total Revenue', value: `$${sales.total_revenue.toFixed(2)}`, color: CHART_COLORS.success, icon: '💰' },
+    { label: 'Gross Profit', value: `$${profit.gross_profit.toFixed(2)}`, color: CHART_COLORS.primary, icon: '💸' },
+    { label: 'Gross Margin', value: `${profit.gross_margin}%`, color: CHART_COLORS.info, icon: '📊' },
+    { label: 'Total Sold', value: sales.total_qty.toString(), color: CHART_COLORS.purple, icon: '🛒' }
+  ];
+
+  // Custom Tooltip for charts
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700">
+          <p className="font-semibold text-gray-900 dark:text-white">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${darkMode ? "bg-gradient-to-br from-gray-900 to-blue-900/20" : "bg-gradient-to-br from-blue-50 to-indigo-100"}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'
+    }`}>
       <div className="container mx-auto px-4 py-8">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="max-w-7xl mx-auto"
-        >
-          {/* Header Section */}
-          <motion.div variants={itemVariants} className="text-center mb-8">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mb-4">
-              Pharmacy Analytics
-            </h1>
-            <p className={`text-xl ${darkMode ? "text-gray-300" : "text-gray-600"} mb-6`}>
-              Complete Business Intelligence Dashboard
-            </p>
+        
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className={`text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent ${
+            darkMode 
+              ? 'bg-gradient-to-r from-blue-400 to-purple-400' 
+              : 'bg-gradient-to-r from-blue-600 to-purple-600'
+          }`}>
+            Pharmacy Dashboard
+          </h1>
+          <p className={`text-lg md:text-xl ${
+            darkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
+            Real-time insights and analytics for your pharmacy
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          
+          {/* LEFT SIDE - Stats Cards and Financial Metrics */}
+          <div className="xl:col-span-1 space-y-8">
             
-            {/* Time Range Selector */}
-            <div className="flex flex-wrap justify-center gap-3 mb-6">
-              {["daily", "weekly", "monthly", "yearly"].map((range) => (
-                <motion.button
-                  key={range}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-5 py-2.5 rounded-xl font-semibold capitalize transition-all border-2 ${
-                    timeRange === range
-                      ? darkMode 
-                        ? "bg-blue-600 border-blue-500 text-white shadow-lg" 
-                        : "bg-blue-500 border-blue-400 text-white shadow-lg"
-                      : darkMode 
-                        ? "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700" 
-                        : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {range}
-                </motion.button>
-              ))}
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`rounded-2xl p-6 shadow-2xl transition-all duration-300 hover:scale-105 ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-blue-900 to-indigo-900' 
+                  : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-80">Suppliers</p>
+                    <p className="text-3xl font-bold">{counts.suppliers}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <span className="text-2xl">🏬</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-2xl transition-all duration-300 hover:scale-105 ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-green-900 to-emerald-900' 
+                  : 'bg-gradient-to-br from-green-500 to-emerald-600 text-white'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-80">Customers</p>
+                    <p className="text-3xl font-bold">{counts.customers}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <span className="text-2xl">👥</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-2xl transition-all duration-300 hover:scale-105 ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-yellow-900 to-amber-900' 
+                  : 'bg-gradient-to-br from-yellow-500 to-amber-500 text-white'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-80">Medicines</p>
+                    <p className="text-3xl font-bold">{counts.medicines}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <span className="text-2xl">💊</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-2xl transition-all duration-300 hover:scale-105 ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-red-900 to-pink-900' 
+                  : 'bg-gradient-to-br from-red-500 to-pink-500 text-white'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-80">Low Stock</p>
+                    <p className="text-3xl font-bold">{counts.low_stock}</p>
+                    <span className="text-xs bg-white bg-opacity-30 px-2 py-1 rounded-full">Attention</span>
+                  </div>
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <span className="text-2xl">⚠️</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </motion.div>
 
-          {/* Key Metrics Grid */}
-          <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Total Revenue */}
-            <motion.div variants={cardVariants} className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-              darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
+            {/* Financial Metrics */}
+            <div className={`rounded-2xl p-6 shadow-2xl ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
             }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-semibold mb-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>Total Revenue</p>
-                  <p className="text-3xl font-bold text-green-500 mb-2">${data.totalRevenue?.toLocaleString() || "0"}</p>
-                  <p className={`text-sm ${data.revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
-                    <span className="text-lg mr-1">{data.revenueGrowth >= 0 ? '↗' : '↘'}</span>
-                    {Math.abs(data.revenueGrowth || 0)}% from last period
-                  </p>
-                </div>
-                <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="text-4xl bg-green-500/20 p-3 rounded-2xl"
-                >
-                  💰
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Total Profit */}
-            <motion.div variants={cardVariants} className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-              darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-            }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-semibold mb-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>Net Profit</p>
-                  <p className={`text-3xl font-bold mb-2 ${(data.netProfit || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    ${Math.abs(data.netProfit || 0).toLocaleString()} 
-                    <span className="text-lg ml-2">{(data.netProfit || 0) >= 0 ? '' : 'Loss'}</span>
-                  </p>
-                  <p className={`text-sm ${(data.profitGrowth || 0) >= 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
-                    <span className="text-lg mr-1">{data.profitGrowth >= 0 ? '↗' : '↘'}</span>
-                    {Math.abs(data.profitGrowth || 0)}%
-                  </p>
-                </div>
-                <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className={`text-4xl p-3 rounded-2xl ${(data.netProfit || 0) >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}
-                >
-                  📈
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Total Expenses */}
-            <motion.div variants={cardVariants} className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-              darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-            }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-semibold mb-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>Total Expenses</p>
-                  <p className="text-3xl font-bold text-orange-500 mb-2">${data.totalExpenses?.toLocaleString() || "0"}</p>
-                  <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                    Purchases & Operations
-                  </p>
-                </div>
-                <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="text-4xl bg-orange-500/20 p-3 rounded-2xl"
-                >
-                  💸
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Active Customers */}
-            <motion.div variants={cardVariants} className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-              darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-            }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-semibold mb-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>Active Customers</p>
-                  <p className="text-3xl font-bold text-blue-500 mb-2">{data.activeCustomers?.toLocaleString() || "0"}</p>
-                  <p className={`text-sm text-green-500 flex items-center`}>
-                    <span className="text-lg mr-1">↗</span>
-                    {data.customerGrowth || 0}% growth
-                  </p>
-                </div>
-                <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="text-4xl bg-blue-500/20 p-3 rounded-2xl"
-                >
-                  👥
-                </motion.div>
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Charts Grid */}
-          <motion.div variants={containerVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Profit & Loss Trend */}
-            <motion.div
-              variants={cardVariants}
-              className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-                darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <span className={`p-2 rounded-lg mr-3 ${
-                  darkMode ? "bg-green-900/50" : "bg-green-100"
-                }`}>
-                  📊
-                </span>
-                Profit & Loss Trend
-              </h3>
-              <div className="h-80">
-                <Line data={profitLossChart} options={lineChartOptions} />
-              </div>
-            </motion.div>
-
-            {/* Revenue Trend */}
-            <motion.div
-              variants={cardVariants}
-              className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-                darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <span className={`p-2 rounded-lg mr-3 ${
-                  darkMode ? "bg-blue-900/50" : "bg-blue-100"
-                }`}>
-                  💰
-                </span>
-                Revenue Trend
-              </h3>
-              <div className="h-80">
-                <Line data={revenueChart} options={lineChartOptions} />
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Bottom Charts Row */}
-          <motion.div variants={containerVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Sales Distribution */}
-            <motion.div
-              variants={cardVariants}
-              className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-                darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-4">Sales Distribution</h3>
-              <div className="h-64">
-                <Doughnut data={salesDistribution} options={doughnutOptions} />
-              </div>
-            </motion.div>
-
-            {/* Stock Status */}
-            <motion.div
-              variants={cardVariants}
-              className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-                darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-4">Stock Status</h3>
-              <div className="h-64">
-                <Pie data={stockStatus} options={doughnutOptions} />
-              </div>
-            </motion.div>
-
-            {/* Debt Overview */}
-            <motion.div
-              variants={cardVariants}
-              className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-                darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <span className={`p-2 rounded-lg mr-3 ${
-                  darkMode ? "bg-red-900/50" : "bg-red-100"
-                }`}>
-                  🏦
-                </span>
-                Debt Overview
+              <h3 className={`text-xl font-bold mb-6 ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                📈 Financial Overview
               </h3>
               <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 rounded-xl bg-red-500/10">
-                  <span className={darkMode ? "text-gray-300" : "text-gray-600"}>Total Debt:</span>
-                  <span className="text-xl font-bold text-red-500">${data.totalDebt?.toLocaleString() || "0"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 rounded-xl bg-green-500/10">
-                  <span className={darkMode ? "text-gray-300" : "text-gray-600"}>Paid:</span>
-                  <span className="text-lg font-semibold text-green-500">${data.debtPaid?.toLocaleString() || "0"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 rounded-xl bg-yellow-500/10">
-                  <span className={darkMode ? "text-gray-300" : "text-gray-600"}>Pending:</span>
-                  <span className="text-lg font-semibold text-yellow-500">${data.debtPending?.toLocaleString() || "0"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 rounded-xl bg-red-500/10">
-                  <span className={darkMode ? "text-gray-300" : "text-gray-600"}>Overdue:</span>
-                  <span className="text-lg font-semibold text-red-500">${data.debtOverdue?.toLocaleString() || "0"}</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Quick Actions */}
-            <motion.div
-              variants={cardVariants}
-              className={`rounded-3xl p-6 shadow-2xl backdrop-blur-sm border-2 ${
-                darkMode ? "bg-gray-800/80 border-gray-700" : "bg-white/80 border-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                {[
-                  { label: "Add New Medicine", icon: "💊", action: () => window.location.href = "/medicines" },
-                  { label: "Process Sale", icon: "🛒", action: () => window.location.href = "/sales" },
-                  { label: "View Reports", icon: "📋", action: () => window.location.href = "/reports" },
-                  { label: "Manage Stock", icon: "📦", action: () => window.location.href = "/purchases" }
-                ].map((action, index) => (
-                  <motion.button
-                    key={action.label}
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={action.action}
-                    className={`w-full p-3 rounded-xl text-left transition-all flex items-center ${
-                      darkMode 
-                        ? "bg-gray-700 hover:bg-gray-600 text-white" 
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    <span className="text-xl mr-3">{action.icon}</span>
-                    <span className="font-medium">{action.label}</span>
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Low Stock Alert */}
-          {data.lowStock?.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mt-8 rounded-3xl p-6 shadow-2xl border-l-4 border-red-500 ${
-                darkMode ? "bg-red-900/20 border-red-700" : "bg-red-50 border-red-200"
-              }`}
-            >
-              <h3 className="text-lg font-semibold text-red-600 mb-4 flex items-center">
-                <span className="text-2xl mr-3">⚠️</span>
-                Low Stock Alert - Immediate Attention Required!
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.lowStock.map((medicine, index) => (
-                  <motion.div
-                    key={medicine._id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`p-4 rounded-xl border-2 ${
-                      medicine.quantity_in_stock === 0
-                        ? darkMode ? "bg-red-800/30 border-red-600" : "bg-red-100 border-red-300"
-                        : darkMode ? "bg-yellow-800/30 border-yellow-600" : "bg-yellow-100 border-yellow-300"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold text-lg">{medicine.name}</span>
-                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                        medicine.quantity_in_stock === 0
-                          ? "bg-red-500 text-white"
-                          : "bg-yellow-500 text-white"
+                {financialMetrics.map((metric, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{metric.icon}</span>
+                      <span className={`font-semibold ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
                       }`}>
-                        {medicine.quantity_in_stock === 0 ? "OUT OF STOCK" : `Only ${medicine.quantity_in_stock} left`}
+                        {metric.label}
                       </span>
                     </div>
-                    {medicine.supplier_id?.name && (
-                      <p className={`text-sm ${darkMode ? "text-red-300" : "text-red-600"}`}>
-                        📞 Supplier: {medicine.supplier_id.name}
-                      </p>
-                    )}
-                  </motion.div>
+                    <span 
+                      className="text-lg font-bold"
+                      style={{ color: metric.color }}
+                    >
+                      {metric.value}
+                    </span>
+                  </div>
                 ))}
               </div>
-            </motion.div>
-          )}
-        </motion.div>
+            </div>
+
+            {/* Stock Distribution */}
+            <div className={`rounded-2xl p-6 shadow-2xl ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
+              <h3 className={`text-xl font-bold mb-6 ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                📦 Stock Health
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stockDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                    >
+                      {stockDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 space-y-2">
+                {stockDistributionData.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                        {item.name}
+                      </span>
+                    </div>
+                    <span className={`font-semibold ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - Charts and Tables */}
+          <div className="xl:col-span-2 space-y-8">
+            
+            {/* Profit & Loss Analysis */}
+            <div className={`rounded-2xl p-6 shadow-2xl ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
+              <h3 className={`text-xl font-bold mb-6 ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                💰 Profit & Loss Analysis
+              </h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={profitLossData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                    <XAxis dataKey="name" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                    <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Bar 
+                      dataKey="value" 
+                      name="Amount ($)"
+                      fill={CHART_COLORS.primary}
+                      radius={[6, 6, 0, 0]}
+                      barSize={40}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="profit" 
+                      stroke={CHART_COLORS.success}
+                      strokeWidth={3}
+                      name="Profit/Loss ($)"
+                      dot={{ fill: CHART_COLORS.success, strokeWidth: 2, r: 6 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Sales Performance Trends */}
+            <div className={`rounded-2xl p-6 shadow-2xl ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
+              <h3 className={`text-xl font-bold mb-6 ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                📊 Sales Performance Trends
+              </h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={salesTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                    <XAxis dataKey="name" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                    <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke={CHART_COLORS.success} 
+                      fill={CHART_COLORS.success}
+                      fillOpacity={0.3}
+                      strokeWidth={3}
+                      name="Revenue ($)"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="quantity" 
+                      stroke={CHART_COLORS.info}
+                      strokeWidth={2}
+                      name="Quantity Sold"
+                      dot={{ fill: CHART_COLORS.info, r: 4 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Selling Medicines */}
+            <div className={`rounded-2xl p-6 shadow-2xl ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
+              <h3 className={`text-xl font-bold mb-6 ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                🏆 Top Selling Medicines
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className={darkMode ? 'bg-gray-700' : 'bg-gray-100'}>
+                      <th className="text-left p-4 font-semibold">Medicine Name</th>
+                      <th className="text-center p-4 font-semibold">Sold</th>
+                      <th className="text-center p-4 font-semibold">Price</th>
+                      <th className="text-center p-4 font-semibold">Revenue</th>
+                      <th className="text-center p-4 font-semibold">Performance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {top_sold.map((item, i) => {
+                      const performance = (item.revenue / sales.total_revenue) * 100;
+                      return (
+                        <tr 
+                          key={i} 
+                          className={`border-b ${
+                            darkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'
+                          } transition-colors`}
+                        >
+                          <td className="p-4 font-medium">{item.name || "Unknown Medicine"}</td>
+                          <td className="text-center p-4">
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              darkMode 
+                                ? 'bg-blue-900 text-blue-200' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {item.qty}
+                            </span>
+                          </td>
+                          <td className="text-center p-4 font-bold" style={{ color: CHART_COLORS.info }}>
+                            ${(item.selling_price || 0).toFixed(2)}
+                          </td>
+                          <td className="text-center p-4 font-bold" style={{ color: CHART_COLORS.success }}>
+                            ${item.revenue.toFixed(2)}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className={`w-24 h-2 rounded-full ${
+                                darkMode ? 'bg-gray-600' : 'bg-gray-200'
+                              }`}>
+                                <div 
+                                  className="h-2 rounded-full"
+                                  style={{
+                                    width: `${Math.min(performance, 100)}%`,
+                                    backgroundColor: 
+                                      performance > 20 ? CHART_COLORS.success :
+                                      performance > 10 ? CHART_COLORS.warning : CHART_COLORS.error
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold w-12">
+                                {performance.toFixed(1)}%
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default All;

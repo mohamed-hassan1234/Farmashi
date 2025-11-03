@@ -4,7 +4,7 @@ import Report from "../models/Report.js";
 export const generateReport = async (req, res) => {
   try {
     const { startDate, endDate, type, include_zero_sales } = req.body;
-    const generated_by = req.user ? req.user._id : null; // assume auth middleware provides req.user
+    const generated_by = req.user ? req.user._id : null;
 
     if (!startDate || !endDate) {
       return res.status(400).json({ message: "startDate and endDate are required" });
@@ -20,7 +20,7 @@ export const generateReport = async (req, res) => {
 
     res.status(201).json(report);
   } catch (err) {
-    console.error(err);
+    console.error("Report generation error:", err);
     res.status(500).json({ message: "Failed to generate report", error: err.message });
   }
 };
@@ -28,7 +28,10 @@ export const generateReport = async (req, res) => {
 // GET: Fetch all reports
 export const getReports = async (req, res) => {
   try {
-    const reports = await Report.find().sort({ generated_at: -1 }).lean();
+    const reports = await Report.find()
+      .sort({ generated_at: -1 })
+      .populate('generated_by', 'name email')
+      .lean();
     res.json(reports);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch reports", error: err.message });
@@ -44,5 +47,5 @@ export const getReportById = async (req, res) => {
     res.json(report);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch report", error: err.message });
-  }
+  } 
 };

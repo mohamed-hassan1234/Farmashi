@@ -1,8 +1,13 @@
+// routes/dashboardRoutes.js
 import express from "express";
-import { getDashboardData } from "../controllers/dashboardController.js";
+import { getSummary } from "../controllers/dashboardController.js";
 
 const router = express.Router();
 
-router.get("/dashboard", getDashboardData);
+/**
+ * GET /api/dashboard/summary
+ * query params: start=YYYY-MM-DD, end=YYYY-MM-DD
+ */
+router.get("/dashboard/summary", getSummary);
 
 export default router;
