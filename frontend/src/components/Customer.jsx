@@ -24,7 +24,7 @@ const Customer = () => {
   // Fetch all customers
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/customers", { withCredentials: true });
+      const res = await axios.get("/api/customers", { withCredentials: true });
       setCustomers(res.data);
     } catch (err) {
       console.error(err);
@@ -43,10 +43,10 @@ const Customer = () => {
     setLoading(true);
     try {
       if (editId) {
-        await axios.put(`http://localhost:5000/api/customers/${editId}`, formData, { withCredentials: true });
+        await axios.put(`/api/customers/${editId}`, formData, { withCredentials: true });
         showAlert("success", "Customer updated successfully! 🎉");
       } else {
-        await axios.post("http://localhost:5000/api/customers", formData, { withCredentials: true });
+        await axios.post("/api/customers", formData, { withCredentials: true });
         showAlert("success", "Customer added successfully! 👥");
       }
       setFormData({ name: "", phone: "", address: "" });
@@ -69,7 +69,7 @@ const Customer = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this customer?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/customers/${id}`, { withCredentials: true });
+      await axios.delete(`/api/customers/${id}`, { withCredentials: true });
       showAlert("success", "Customer deleted successfully! 🗑️");
       fetchCustomers();
     } catch (err) {

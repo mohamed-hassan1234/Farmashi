@@ -36,7 +36,7 @@ const Sale = () => {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/customers");
+      const res = await axios.get("/api/customers");
       setCustomers(res.data || []);
     } catch (err) {
       console.error(err);
@@ -45,7 +45,7 @@ const Sale = () => {
 
   const fetchMedicines = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/medicines");
+      const res = await axios.get("/api/medicines");
       setMedicines(res.data || []);
     } catch (err) {
       console.error(err);
@@ -54,7 +54,7 @@ const Sale = () => {
 
   const fetchSales = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/sales");
+      const res = await axios.get("/api/sales");
       setSales(res.data || []);
     } catch (err) {
       console.error(err);
@@ -152,7 +152,7 @@ const Sale = () => {
         sale_type: form.sale_type,
         amount_paid: Number(form.amount_paid),
       };
-      const res = await axios.post("http://localhost:5000/api/sales", payload);
+      const res = await axios.post("/api/sales", payload);
       showAlert("success", res.data.message || "Sale recorded successfully! 🎉");
       setForm({
         customer_id: "",

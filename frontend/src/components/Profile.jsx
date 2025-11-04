@@ -3,7 +3,7 @@ import axios from "axios";
 import { useTheme } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 
-axios.defaults.baseURL = "http://localhost:5000";
+axios.defaults.baseURL = "";
 axios.defaults.withCredentials = true;
 
 const Profile = () => {

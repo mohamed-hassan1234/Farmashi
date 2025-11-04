@@ -38,7 +38,7 @@ const Payment = () => {
 
   const fetchPayments = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/payments");
+      const res = await axios.get("/api/payments");
       setPayments(res.data);
     } catch (err) {
       console.error(err);
@@ -48,7 +48,7 @@ const Payment = () => {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/customers");
+      const res = await axios.get("/api/customers");
       setCustomers(res.data);
     } catch (err) {
       console.error(err);
@@ -57,7 +57,7 @@ const Payment = () => {
 
   const fetchCustomerSales = async (customerId) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/sales/customer/${customerId}`);
+      const res = await axios.get(`/api/sales/customer/${customerId}`);
       setSales(res.data);
     } catch (err) {
       console.error(err);
@@ -84,7 +84,7 @@ const Payment = () => {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/api/payments", {
+      await axios.post("/api/payments", {
         related_id: sale_id,
         type,
         amount: Number(amount),

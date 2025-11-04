@@ -49,7 +49,7 @@ const Purchase = () => {
 
   const fetchPurchases = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/purchases", { withCredentials: true });
+      const res = await axios.get("/api/purchases", { withCredentials: true });
       setPurchases(res.data || []);
     } catch (err) {
       console.error(err);
@@ -59,7 +59,7 @@ const Purchase = () => {
 
   const fetchSuppliers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/suppliers", { withCredentials: true });
+      const res = await axios.get("/api/suppliers", { withCredentials: true });
       setSuppliers(res.data || []);
     } catch (err) {
       console.error(err);
@@ -68,7 +68,7 @@ const Purchase = () => {
 
   const fetchMedicines = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/medicines", { withCredentials: true });
+      const res = await axios.get("/api/medicines", { withCredentials: true });
       setMedicines(res.data || []);
     } catch (err) {
       console.error(err);
@@ -97,7 +97,7 @@ const Purchase = () => {
 
   const handleEdit = async (purchase) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/purchases/${purchase._id}`, { withCredentials: true });
+      const res = await axios.get(`/api/purchases/${purchase._id}`, { withCredentials: true });
       const purchaseWithItems = res.data;
       setEditing(purchaseWithItems);
 
@@ -129,11 +129,11 @@ const Purchase = () => {
 
     try {
       if (editing) {
-        await axios.put(`http://localhost:5000/api/purchases/${editing._id}`, { ...form, total_amount }, { withCredentials: true });
+        await axios.put(`/api/purchases/${editing._id}`, { ...form, total_amount }, { withCredentials: true });
         showAlert("success", "Purchase updated successfully! ✅");
         setEditing(null);
       } else {
-        await axios.post("http://localhost:5000/api/purchases", { ...form, total_amount, user_id: user._id }, { withCredentials: true });
+        await axios.post("/api/purchases", { ...form, total_amount, user_id: user._id }, { withCredentials: true });
         showAlert("success", "Purchase added successfully! 📦");
       }
 

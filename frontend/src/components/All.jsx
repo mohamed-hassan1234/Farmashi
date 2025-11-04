@@ -8,7 +8,9 @@ import {
 } from 'recharts';
 import { useTheme as useCustomTheme } from "../context/ThemeContext";
 
-const API_URL = "http://localhost:5000/api/dashboard/summary";
+// const API_URL = "http://localhost:5000/api/dashboard/summary";
+const API_URL = "/api/dashboard/summary";
+
 
 // Enhanced color palette for charts
 const CHART_COLORS = {

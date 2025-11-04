@@ -29,7 +29,7 @@ const Debt = () => {
 
   const fetchDebts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/debts");
+      const res = await axios.get("/api/debts");
       setDebts(res.data);
     } catch (err) {
       console.error(err);
@@ -52,7 +52,7 @@ const Debt = () => {
     setPayingDebt(debtId);
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/debts/${debtId}/pay`, {
+      const res = await axios.post(`/api/debts/${debtId}/pay`, {
         amount, method: "cash"
       });
       showAlert("success", "Payment processed successfully! 💰");
@@ -75,7 +75,7 @@ const Debt = () => {
     const debtData = editDebt[debtId];
     if (!debtData) return;
     try {
-      await axios.put(`http://localhost:5000/api/debts/${debtId}`, debtData);
+      await axios.put(`/api/debts/${debtId}`, debtData);
       showAlert("success", "Debt updated successfully! ✅");
       fetchDebts();
     } catch (err) {
@@ -86,7 +86,7 @@ const Debt = () => {
   const deleteDebtRecord = async (debtId) => {
     if (!window.confirm("Are you sure you want to delete this debt record?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/debts/${debtId}`);
+      await axios.delete(`/api/debts/${debtId}`);
       showAlert("success", "Debt record deleted successfully! 🗑️");
       fetchDebts();
     } catch (err) {
@@ -101,7 +101,7 @@ const Debt = () => {
     if (window.confirm(`Clear entire debt of ${debt.remaining_balance} for ${debt.customer_id?.name}?`)) {
       setLoading(true);
       try {
-        await axios.post(`http://localhost:5000/api/debts/${debtId}/pay`, {
+        await axios.post(`/api/debts/${debtId}/pay`, {
           amount: debt.remaining_balance,
           method: "cash"
         });

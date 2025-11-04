@@ -13,7 +13,8 @@ const Supplier = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSupplier, setSelectedSupplier] = useState(null);
 
-  const API_URL = "http://localhost:5000/api/suppliers";
+  const API_URL = "/api/suppliers";
+  // const API_URL = "http://localhost:5000/api/suppliers";
 
   // Enhanced alert system
   const showAlert = (type, message) => {

@@ -12,7 +12,8 @@ const Category = () => {
   const [alert, setAlert] = useState({ type: "", message: "", visible: false });
   const [searchTerm, setSearchTerm] = useState("");
 
-  const API_URL = "http://localhost:5000/api/categories";
+  const API_URL = "/api/categories";
+  // const API_URL = "http://localhost:5000/api/categories";
 
   // Enhanced alert system
   const showAlert = (type, message) => {

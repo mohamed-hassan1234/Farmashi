@@ -10,7 +10,7 @@ const PurchaseInvoice = ({ purchaseId, userId }) => {
 
   const fetchPurchaseItems = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/purchase-items?purchase_id=${purchaseId}`, { withCredentials: true });
+      const res = await axios.get(`/api/purchase-items?purchase_id=${purchaseId}`, { withCredentials: true });
       setItems(res.data);
 
       if (res.data.length > 0) {

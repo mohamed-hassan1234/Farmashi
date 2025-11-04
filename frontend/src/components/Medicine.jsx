@@ -41,7 +41,7 @@ const Medicine = () => {
 
   const fetchMedicines = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/medicines", { withCredentials: true });
+      const res = await axios.get("/api/medicines", { withCredentials: true });
       setMedicines(res.data);
     } catch (err) {
       console.error(err);
@@ -51,7 +51,7 @@ const Medicine = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/categories", { withCredentials: true });
+      const res = await axios.get("/api/categories", { withCredentials: true });
       setCategories(res.data);
     } catch (err) {
       console.error(err);
@@ -60,7 +60,7 @@ const Medicine = () => {
 
   const fetchSuppliers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/suppliers", { withCredentials: true });
+      const res = await axios.get("/api/suppliers", { withCredentials: true });
       setSuppliers(res.data);
     } catch (err) {
       console.error(err);
@@ -74,10 +74,10 @@ const Medicine = () => {
     setLoading(true);
     try {
       if (editingId) {
-        await axios.put(`http://localhost:5000/api/medicines/${editingId}`, form, { withCredentials: true });
+        await axios.put(`/api/medicines/${editingId}`, form, { withCredentials: true });
         showAlert("success", "Medicine updated successfully! ✅");
       } else {
-        await axios.post("http://localhost:5000/api/medicines", form, { withCredentials: true });
+        await axios.post("/api/medicines", form, { withCredentials: true });
         showAlert("success", "Medicine added successfully! 💊");
       }
       setForm({ name: "", category_id: "", supplier_id: "", quantity_in_stock: 0, buying_price: 0, selling_price: 0, expiry_date: "" });
@@ -107,7 +107,7 @@ const Medicine = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this medicine?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/medicines/${id}`, { withCredentials: true });
+        await axios.delete(`/api/medicines/${id}`, { withCredentials: true });
         showAlert("success", "Medicine deleted successfully! 🗑️");
         fetchMedicines();
       } catch (err) {
@@ -120,7 +120,7 @@ const Medicine = () => {
     const qty = parseInt(prompt("Enter quantity change (+/-):"));
     if (!isNaN(qty)) {
       try {
-        await axios.post(`http://localhost:5000/api/medicines/${id}/stock`, { 
+        await axios.post(`/api/medicines/${id}/stock`, { 
           quantity_change: qty, 
           change_type: "manual", 
           user_id: "admin" 

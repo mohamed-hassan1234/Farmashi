@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useTheme } from "../context/ThemeContext";
 
-axios.defaults.baseURL = "http://localhost:5000";
+axios.defaults.baseURL = "";
+// axios.defaults.baseURL = "http://localhost:5000";
 
 const Report = () => {
   const { darkMode } = useTheme();
